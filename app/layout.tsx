@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import { Toaster } from "@/components/ui/sonner"
 import { GlobalState } from "@/components/utility/global-state"
 import { Providers } from "@/components/utility/providers"
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             {session ? <GlobalState>{children}</GlobalState> : children}
           </div>
         </Providers>
+        <Analytics />
       </body>
     </html>
   )

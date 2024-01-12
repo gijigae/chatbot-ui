@@ -9,10 +9,10 @@ export const uploadFile = async (
     file_id: string
   }
 ) => {
-  const SIZE_LIMIT = 10000000 // 10MB
+  const SIZE_LIMIT = 50000000 // 50MB
 
   if (file.size > SIZE_LIMIT) {
-    throw new Error(`File must be less than ${SIZE_LIMIT / 1000000}MB`)
+    throw new Error(`File must be less than ${SIZE_LIMIT / 5000000}MB`)
   }
 
   const filePath = `${payload.user_id}/${payload.file_id}`

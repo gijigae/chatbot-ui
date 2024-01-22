@@ -8,6 +8,7 @@ import { createServerClient } from "@supabase/ssr"
 import { Metadata } from "next"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { get } from "@vercel/edge-config"
 
 export const metadata: Metadata = {
   title: "Login"
@@ -50,7 +51,7 @@ export default async function Login({
     })
 
     if (error) {
-      return redirect("/login?message=Could not authenticate user")
+      return redirect(`/login?message=${error.message}`)
     }
 
     return redirect("/chat")
@@ -61,6 +62,40 @@ export default async function Login({
 
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+
+    if (process.env.EMAIL_DOMAIN_WHITELIST || process.env.EDGE_CONFIG) {
+      let patternsString = process.env.EMAIL_DOMAIN_WHITELIST
+
+      if (process.env.EDGE_CONFIG)
+        patternsString = await get<string>("EMAIL_DOMAIN_WHITELIST")
+
+      const emailDomainWhitelist = patternsString?.split(",") ?? []
+
+      if (
+        emailDomainWhitelist.length > 0 &&
+        !emailDomainWhitelist.includes(email.split("@")[1])
+      ) {
+        return redirect(
+          `/login?message=Email ${email} is not allowed to sign up.`
+        )
+      }
+    }
+
+    if (process.env.EMAIL_WHITELIST || process.env.EDGE_CONFIG) {
+      let patternsString = process.env.EMAIL_WHITELIST
+
+      if (process.env.EDGE_CONFIG)
+        patternsString = await get<string>("EMAIL_WHITELIST")
+
+      const emailWhitelist = patternsString?.split(",") ?? []
+
+      if (emailWhitelist.length > 0 && !emailWhitelist.includes(email)) {
+        return redirect(
+          `/login?message=Email ${email} is not allowed to sign up.`
+        )
+      }
+    }
+
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
@@ -75,7 +110,7 @@ export default async function Login({
 
     if (error) {
       console.error(error)
-      return redirect("/login?message=Could not authenticate user")
+      return redirect(`/login?message=${error.message}`)
     }
 
     return redirect("/setup")
@@ -97,9 +132,10 @@ export default async function Login({
     })
 
     if (error) {
-      console.error(error)
-      return redirect("/login?message=Could not reset password")
+      return redirect(`/login?message=${error.message}`)
     }
+
+    return redirect("/login?message=Check email to reset password")
   }
 
   return (

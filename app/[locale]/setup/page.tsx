@@ -9,14 +9,14 @@ import { TablesUpdate } from "@/supabase/types"
 import { ChatSettings } from "@/types"
 import { useRouter } from "next/navigation"
 import { useContext, useEffect, useState } from "react"
-import { APIStep } from "../../components/setup/api-step"
-import { FinishStep } from "../../components/setup/finish-step"
-import { ProfileStep } from "../../components/setup/profile-step"
+import { APIStep } from "../../../components/setup/api-step"
+import { FinishStep } from "../../../components/setup/finish-step"
+import { ProfileStep } from "../../../components/setup/profile-step"
 import {
   SETUP_STEP_COUNT,
   StepContainer
-} from "../../components/setup/step-container"
-import { WorkspaceStep } from "../../components/setup/workspace-step"
+} from "../../../components/setup/step-container"
+import { WorkspaceStep } from "../../../components/setup/workspace-step"
 
 export default function SetupPage() {
   const { profile, setProfile, setSelectedWorkspace, setWorkspaces } =
@@ -76,7 +76,14 @@ export default function SetupPage() {
   }
 
   const handleSaveSetupSetting = async () => {
-    if (!profile) return
+    const session = (await supabase.auth.getSession()).data.session
+    if (!session) {
+      router.push("/login")
+      return
+    }
+
+    const user = session.user
+    const profile = await getProfileByUserId(user.id)
 
     let profileImageUrl = ""
     let profileImagePath = ""
@@ -142,7 +149,7 @@ export default function SetupPage() {
       )
     )
 
-    router.push("/chat")
+    router.refresh()
   }
 
   const renderStep = (stepNum: number) => {
@@ -155,7 +162,7 @@ export default function SetupPage() {
             stepNum={currentStep}
             stepTitle="Welcome to Chatbot UI"
             onShouldProceed={handleShouldProceed}
-            showNextButton={!!(displayName && username && usernameAvailable)}
+            showNextButton={!!(username && usernameAvailable)}
             showBackButton={false}
           >
             <ProfileStep

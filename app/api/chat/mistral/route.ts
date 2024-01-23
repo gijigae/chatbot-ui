@@ -14,8 +14,8 @@ export async function POST(request: Request) {
     const profile = await getServerProfile()
 
     checkApiKey(profile.mistral_api_key, "Mistral")
-    const mistralBaseUrl = "https://api.mistral.ai/v1/chat/completions"
-    const response = await fetch(`${mistralBaseUrl}`, {
+
+    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         Accept: "application/json",

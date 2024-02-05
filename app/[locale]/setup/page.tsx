@@ -2,7 +2,14 @@
 
 import { ChatbotUIContext } from "@/context/context"
 import { getProfileByUserId, updateProfile } from "@/db/profile"
-import { getWorkspacesByUserId } from "@/db/workspaces"
+import {
+  getHomeWorkspaceByUserId,
+  getWorkspacesByUserId
+} from "@/db/workspaces"
+import {
+  fetchHostedModels,
+  fetchOpenRouterModels
+} from "@/lib/models/fetch-models"
 import { supabase } from "@/lib/supabase/browser-client"
 import { TablesUpdate } from "@/supabase/types"
 import { useRouter } from "next/navigation"
@@ -16,8 +23,15 @@ import {
 } from "../../../components/setup/step-container"
 
 export default function SetupPage() {
-  const { profile, setProfile, setWorkspaces, setSelectedWorkspace } =
-    useContext(ChatbotUIContext)
+  const {
+    profile,
+    setProfile,
+    setWorkspaces,
+    setSelectedWorkspace,
+    setEnvKeyMap,
+    setAvailableHostedModels,
+    setAvailableOpenRouterModels
+  } = useContext(ChatbotUIContext)
 
   const router = useRouter()
 
@@ -62,7 +76,23 @@ export default function SetupPage() {
         if (!profile.has_onboarded) {
           setLoading(false)
         } else {
-          return router.push("/chat")
+          const data = await fetchHostedModels(profile)
+
+          if (!data) return
+
+          setEnvKeyMap(data.envKeyMap)
+          setAvailableHostedModels(data.hostedModels)
+
+          if (profile["openrouter_api_key"] || data.envKeyMap["openrouter"]) {
+            const openRouterModels = await fetchOpenRouterModels()
+            if (!openRouterModels) return
+            setAvailableOpenRouterModels(openRouterModels)
+          }
+
+          const homeWorkspaceId = await getHomeWorkspaceByUserId(
+            session.user.id
+          )
+          return router.push(`/${homeWorkspaceId}/chat`)
         }
       }
     })()
@@ -120,7 +150,7 @@ export default function SetupPage() {
     setSelectedWorkspace(homeWorkspace!)
     setWorkspaces(workspaces)
 
-    router.refresh()
+    return router.push(`/${homeWorkspace?.id}/chat`)
   }
 
   const renderStep = (stepNum: number) => {
